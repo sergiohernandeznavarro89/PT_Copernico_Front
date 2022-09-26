@@ -9,9 +9,20 @@ export const CustomerTable = () => {
     const [customerList, setCustomerList] = useState<CustomerListResponse>();
     const [customerError, setCustomerError] = useState<string>();
     const [showTable, setshowTable] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editId, setEditId] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
-    const addCustomer = () => setShowModal(true);
+    const addCustomer = () => {
+        setIsEditMode(false);
+        setShowModal(true);
+    }
+
+    const editCustomer = (id) => {
+        setIsEditMode(true);
+        setEditId(id);
+        setShowModal(true);
+    }
 
     const customerItems = useMemo(() => customerList?.items, [customerList]);
 
@@ -44,7 +55,7 @@ export const CustomerTable = () => {
         return (
             <Row justify="center" align="center">
                 <Col css={{ d: "flex" }}>
-                    <Button color="primary" bordered>Edit</Button>
+                    <Button color="primary" bordered onClick={() => editCustomer(id)}>Edit</Button>
                 </Col>
                 <Col css={{ d: "flex" }}>
                     <Button color="error" bordered onClick={() => removeCustomer(id)}>Remove</Button>
@@ -57,7 +68,7 @@ export const CustomerTable = () => {
 
     return (
         <>
-            <CustomerModal showModal={showModal} closeModal={() => setShowModal(false)} />
+            <CustomerModal showModal={showModal} closeModal={() => { setShowModal(false); setEditId(null) }} isEditMode={isEditMode} customerId={editId} getAll={getAll} />
             <h1>Customers</h1>
             <div>
                 <Button bordered color="primary" auto shadow onClick={addCustomer}>

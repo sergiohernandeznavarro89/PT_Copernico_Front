@@ -3,13 +3,18 @@ import axios from 'axios';
 import { count } from 'console';
 import { FC, useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
+import { customerApi } from '../../api';
+import { Customer } from '../../interfaces/customer-list';
 
 interface Props {
     showModal: boolean
     closeModal: () => void
+    isEditMode?: boolean
+    customerId?: number
+    getAll: () => void
 }
 
-export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
+export const CustomerModal: FC<Props> = ({ showModal, closeModal, isEditMode = false, customerId, getAll }) => {
 
     const [id, setId] = useState('');
     const [email, setEmail] = useState('');
@@ -41,6 +46,20 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
         setLast('');
     }
 
+    const getById = async () => {
+        if (customerId) {
+            await customerApi.get<Customer>(`/Customer/${customerId}`)
+                .then(({ data }) => {
+                    setId(data.id.toString());
+                    setCompany(data.company);
+                    setCountry(data.country);
+                    setEmail(data.email);
+                    setFirst(data.first);
+                    setLast(data.last);
+                });
+        }
+    };
+
     const isValidForm = () => {
         if (id && email && first && last && company && country) {
             setDisableButton(false);
@@ -49,6 +68,14 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
             setDisableButton(true);
         }
     }
+
+    useEffect(() => {
+        if (isEditMode) {
+            getById();
+        }
+    }, [customerId])
+
+
 
     useEffect(() => {
         isValidForm();
@@ -60,12 +87,22 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
 
         const params = formatPostParams();
 
-        axios.post('https://localhost:7061/api/Customer', params)
-            .then(response => {
-                debugger;
-                clearForm();
-                closeModal();
-            });
+        if (!isEditMode) {
+            axios.post('https://localhost:7061/api/Customer', params)
+                .then(response => {
+                    clearForm();
+                    getAll();
+                    closeModal();
+                });
+        }
+        else {
+            axios.put('https://localhost:7061/api/Customer', params)
+                .then(response => {
+                    clearForm();
+                    getAll();
+                    closeModal();
+                });
+        }
     };
 
     return (
@@ -79,7 +116,7 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
             >
                 <Modal.Header>
                     <Text b id="modal-title" size={18}>
-                        Add Customer
+                        {isEditMode ? 'Edit Customer' : 'Add Customer'}
                     </Text>
                 </Modal.Header>
                 <Modal.Body>
@@ -87,6 +124,8 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
                     <Grid.Container gap={4}>
                         <Grid>
                             <Input
+                                disabled={isEditMode}
+                                value={id}
                                 id='id'
                                 underlined
                                 labelPlaceholder="Id"
@@ -96,6 +135,7 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
                         </Grid>
                         <Grid>
                             <Input
+                                value={email}
                                 id="email"
                                 underlined
                                 labelPlaceholder="Email"
@@ -105,6 +145,7 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
                         </Grid>
                         <Grid>
                             <Input
+                                value={first}
                                 id="first"
                                 underlined
                                 labelPlaceholder="First"
@@ -114,6 +155,7 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
                         </Grid>
                         <Grid>
                             <Input
+                                value={last}
                                 id="last"
                                 underlined
                                 labelPlaceholder="Last"
@@ -123,6 +165,7 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
                         </Grid>
                         <Grid>
                             <Input
+                                value={company}
                                 id="company"
                                 underlined
                                 labelPlaceholder="Company"
@@ -132,7 +175,7 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
                         </Grid>
                         <Grid>
                             <Input
-                                name="country"
+                                value={country}
                                 id="country"
                                 underlined
                                 labelPlaceholder="Country"
@@ -146,7 +189,7 @@ export const CustomerModal: FC<Props> = ({ showModal, closeModal }) => {
                     <Button auto flat color="error" onClick={closeModal}>
                         Close
                     </Button>
-                    <Button disabled={disableButton} auto onClick={(e) => handleSubmit(e)}>
+                    <Button disabled={disableButton} auto onClick={(e: any) => handleSubmit(e)}>
                         Save
                     </Button>
                 </Modal.Footer>
